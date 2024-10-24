@@ -162,19 +162,24 @@ program
     }
   });
 
-program
+  program
   .command('list')
   .description('List all configured deployment targets')
   .action(() => {
+    const configManager = new ConfigManager();
     const aliases = configManager.listConfigs();
+
     if (aliases.length === 0) {
       console.log(chalk.yellow('No configurations found'));
       return;
     }
+
     console.log(chalk.blue('Configured deployment targets:'));
     aliases.forEach((alias) => {
       const config = configManager.getConfig(alias);
-      console.log(chalk.green(`- ${alias}: ${config?.username}@${config?.host}`));
+      if (config) {
+        console.log(chalk.green(`- ${alias}: ${config.username}@${config.host}`));
+      }
     });
   });
 
