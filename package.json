@@ -1,6 +1,6 @@
 {
     "name": "@btheo/dpl",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Simple deployment tool for Docker projects",
     "main": "dist/index.js",
     "bin": {
