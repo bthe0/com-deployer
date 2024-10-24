@@ -22,8 +22,7 @@ class ConfigManager {
         return this.config.get(alias);
     }
     listConfigs() {
-        const store = this.config.get('.');
-        return Object.keys(store || {});
+        return Object.keys(this.config.store || {});
     }
     deleteConfig(alias) {
         this.config.delete(alias);

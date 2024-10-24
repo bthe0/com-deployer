@@ -145,6 +145,7 @@ program
     .command('list')
     .description('List all configured deployment targets')
     .action(() => {
+    const configManager = new config_1.ConfigManager();
     const aliases = configManager.listConfigs();
     if (aliases.length === 0) {
         console.log(chalk_1.default.yellow('No configurations found'));
@@ -153,7 +154,9 @@ program
     console.log(chalk_1.default.blue('Configured deployment targets:'));
     aliases.forEach((alias) => {
         const config = configManager.getConfig(alias);
-        console.log(chalk_1.default.green(`- ${alias}: ${config?.username}@${config?.host}`));
+        if (config) {
+            console.log(chalk_1.default.green(`- ${alias}: ${config.username}@${config.host}`));
+        }
     });
 });
 program
