@@ -31,7 +31,8 @@ class Deployer {
         this.ssh = new node_ssh_1.NodeSSH();
     }
     async setupSshAgent(passphrase, output) {
-        const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
+        const homeDir = await this.execCommand('echo $HOME', '/').then((result) => result.stdout.trim());
+        // First, ensure the script is properly escaped and created
         const setupScript = `
 #!/bin/bash
 mkdir -p ${homeDir}/.ssh
@@ -50,8 +51,7 @@ export SSH_ASKPASS=${homeDir}/.ssh/askpass.sh
 export SSH_ASKPASS_REQUIRE=force
 export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes"
 
-# Start the ssh-agent and store its environment variables
-eval \`ssh-agent\`
+eval \\\`ssh-agent\\\`
 
 if [ -f "${homeDir}/.ssh/id_ed25519" ]; then
     SSH_ASKPASS=${homeDir}/.ssh/askpass.sh SSH_ASKPASS_REQUIRE=force setsid -w ssh-add ${homeDir}/.ssh/id_ed25519
@@ -62,24 +62,31 @@ else
     exit 1
 fi
 
-# List keys and test connection
 ssh-add -l
 ssh -T git@github.com -o StrictHostKeyChecking=no || true
 
-# Save environment for later use
-echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > ${homeDir}/.ssh-agent-env
-echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> ${homeDir}/.ssh-agent-env
+echo "export SSH_AUTH_SOCK=\$SSH_AUTH_SOCK" > ${homeDir}/.ssh-agent-env
+echo "export SSH_AGENT_PID=\$SSH_AGENT_PID" >> ${homeDir}/.ssh-agent-env
 `;
-        await this.execCommand(`bash -c "echo '${setupScript}' > ${homeDir}/setup-ssh-agent.sh"`, homeDir);
-        await this.execCommand('chmod +x ~/setup-ssh-agent.sh', homeDir);
-        const result = await this.execCommand(`source ${homeDir}/setup-ssh-agent.sh`, homeDir);
+        // Write the script content with proper escaping
+        const writeScriptResult = await this.execCommand(`cat > ${homeDir}/setup-ssh-agent.sh << 'EOSCRIPT'\n${setupScript}\nEOSCRIPT`, homeDir);
+        if (writeScriptResult.code !== 0) {
+            throw new Error(`Failed to create setup script: ${writeScriptResult.stderr}`);
+        }
+        // Make the script executable
+        const chmodResult = await this.execCommand(`chmod +x ${homeDir}/setup-ssh-agent.sh`, homeDir);
+        if (chmodResult.code !== 0) {
+            throw new Error(`Failed to make setup script executable: ${chmodResult.stderr}`);
+        }
+        // Execute the script
+        const result = await this.execCommand(`bash ${homeDir}/setup-ssh-agent.sh`, homeDir);
         if (result.code !== 0) {
             throw new Error(`Failed to setup SSH agent: ${result.stderr || result.stdout}`);
         }
         output.push('Set up SSH agent with key');
     }
     async cleanupGitAuth(output) {
-        const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
+        const homeDir = await this.execCommand('echo $HOME', '/').then((result) => result.stdout.trim());
         const cleanupScript = `
 #!/bin/bash
 if [ -f "${homeDir}/.ssh-agent-env" ]; then
@@ -101,7 +108,7 @@ git config --global --unset credential.helper || true
         output.push('Cleaned up authentication and temporary files');
     }
     async setupGitCredentials(password, username, output) {
-        const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
+        const homeDir = await this.execCommand('echo $HOME', '/').then((result) => result.stdout.trim());
         const commands = [
             `git config --global credential.helper 'store --file ${homeDir}/.git-credentials-temp'`,
             `echo "https://${username}:${password}@github.com" > ${homeDir}/.git-credentials-temp`,
@@ -140,35 +147,35 @@ git config --global --unset credential.helper || true
                 });
             }
             output.push('Connected to server');
-            const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
+            const homeDir = await this.execCommand('echo $HOME', '/').then((result) => result.stdout.trim());
             if (config.gitKeyPassphrase || config.gitPassword) {
                 await this.setupGitAuth(config, output);
             }
             const commands = [
                 {
                     command: `cd ${config.projectPath}`,
-                    message: 'Navigating to project directory...'
+                    message: 'Navigating to project directory...',
                 },
                 {
                     command: this.buildGitPullCommand(config, homeDir),
-                    message: 'Pulling latest changes...'
+                    message: 'Pulling latest changes...',
                 },
                 {
                     command: 'docker compose down',
-                    message: 'Stopping containers...'
+                    message: 'Stopping containers...',
                 },
                 {
                     command: 'docker system prune -f --volumes',
-                    message: 'Cleaning up Docker resources...'
+                    message: 'Cleaning up Docker resources...',
                 },
                 {
                     command: 'docker compose up -d',
-                    message: 'Starting containers...'
+                    message: 'Starting containers...',
                 },
                 {
                     command: 'docker ps',
-                    message: 'Checking running containers...'
-                }
+                    message: 'Checking running containers...',
+                },
             ];
             for (const cmd of commands) {
                 output.push(cmd.message);
@@ -188,7 +195,7 @@ git config --global --unset credential.helper || true
             return {
                 success: false,
                 error: error,
-                output
+                output,
             };
         }
         finally {
@@ -220,7 +227,7 @@ git pull origin master
         return {
             stdout: result.stdout,
             stderr: result.stderr,
-            code: result.code ?? 0
+            code: result.code ?? 0,
         };
     }
 }

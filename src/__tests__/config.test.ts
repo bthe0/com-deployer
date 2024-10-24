@@ -15,7 +15,7 @@ jest.mock('conf', () => {
       }),
       delete: jest.fn((key: string) => {
         delete store[key];
-      })
+      }),
     };
   });
 });
@@ -31,7 +31,7 @@ describe('ConfigManager', () => {
     alias: 'test',
     privateKeyPath: undefined,
     gitPassword: undefined,
-    gitKeyPassphrase: undefined
+    gitKeyPassphrase: undefined,
   };
 
   beforeEach(() => {
@@ -49,7 +49,7 @@ describe('ConfigManager', () => {
       const sshConfig = {
         ...mockConfig,
         password: undefined,
-        privateKeyPath: '/home/user/.ssh/id_rsa'
+        privateKeyPath: '/home/user/.ssh/id_rsa',
       };
       configManager.saveConfig(sshConfig);
       expect(configManager['config'].set).toHaveBeenCalledWith('test', sshConfig);
@@ -59,7 +59,7 @@ describe('ConfigManager', () => {
       const gitConfig = {
         ...mockConfig,
         gitPassword: 'gitpass',
-        gitKeyPassphrase: 'passphrase'
+        gitKeyPassphrase: 'passphrase',
       };
       configManager.saveConfig(gitConfig);
       expect(configManager['config'].set).toHaveBeenCalledWith('test', gitConfig);

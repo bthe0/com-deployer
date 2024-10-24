@@ -26,9 +26,9 @@ program
   .action(async (alias, options) => {
     try {
       let authType = options.sshKey ? 'SSH Key' : options.password ? 'Password' : null;
-      
+
       const questions = [];
-      
+
       if (!alias) {
         questions.push({
           type: 'input',
@@ -187,6 +187,33 @@ program
       console.log(chalk.green(`Configuration '${alias}' removed successfully`));
     } catch (error) {
       console.error(chalk.red('Failed to remove configuration:', error));
+    }
+  });
+
+program
+  .command('duplicate <alias> <newAlias> <newFolderPath>')
+  .description('Duplicate an existing configuration under a new alias with a new project path')
+  .action((alias, newAlias, newFolderPath) => {
+    try {
+      const existingConfig = configManager.getConfig(alias);
+      if (!existingConfig) {
+        console.error(chalk.red(`No configuration found for alias: ${alias}`));
+        return;
+      }
+
+      const newConfig = {
+        ...existingConfig,
+        alias: newAlias,
+        projectPath: newFolderPath,
+      };
+
+      configManager.saveConfig(newConfig);
+      console.log(chalk.green(`Configuration duplicated successfully!`));
+      console.log(chalk.blue(`Old Alias: ${alias}`));
+      console.log(chalk.blue(`New Alias: ${newAlias}`));
+      console.log(chalk.blue(`New Project Path: ${newFolderPath}`));
+    } catch (error) {
+      console.error(chalk.red('Failed to duplicate configuration:', error));
     }
   });
 

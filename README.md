@@ -1,38 +1,38 @@
-# dpl (Docker Project Deployer)
+# DPL (Docker Project Deployer)
 
-A simple, secure CLI tool for deploying Docker projects over SSH. Configure multiple deployment targets and deploy with a single command.
+A streamlined CLI tool for deploying Docker projects over SSH with multi-target support and secure authentication handling.
 
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
 
-## Features
+## ✨ Key Features
 
-- 🔐 Multiple authentication methods (Password or SSH Key)
-- 🔑 Git authentication support (SSH key passphrase or password)
-- 📦 Multiple deployment targets support
-- 🐳 Docker-compose workflow integration
-- 💻 Interactive configuration
-- 🚀 Simple one-command deployment
-- 📝 TypeScript support
+- 🔐 Flexible authentication (Password/SSH Key)
+- 🔑 Secure Git credential management
+- 📦 Multiple deployment target support
+- 🐳 Seamless Docker Compose integration
+- 💻 Interactive configuration wizard
+- 🚀 One-command deployment
+- 🛡️ Secure credential handling
 
-## Installation
+## 📦 Installation
 
 ```bash
 npm install -g @btheo/dpl
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
-1. Configure a new deployment target:
+1. Configure a deployment target:
 
 ```bash
-# With password authentication
+# Password authentication
 dpl configure myserver --password
 
-# With SSH key authentication (defaults to ~/.ssh/id_rsa)
+# SSH key authentication (defaults to ~/.ssh/id_rsa)
 dpl configure myserver --ssh-key
 ```
 
-2. Deploy to your configured target:
+2. Deploy your project:
 
 ```bash
 # Standard deployment
@@ -42,138 +42,122 @@ dpl deploy myserver
 dpl deploy myserver --skip-git-auth
 ```
 
-## Commands
+## 📖 Command Reference
 
-### Configure a new target
+### Configure New Target
 
 ```bash
 dpl configure [alias] [options]
 ```
 
-Options:
-- `--password`: Use password authentication
-- `--ssh-key`: Use SSH key authentication (defaults to ~/.ssh/id_rsa)
-- `--git-auth`: Configure Git authentication
+**Options:**
 
-This will prompt you for:
-- Host address
-- Username
-- Authentication method (password or SSH key)
-- Project path on remote server
-- Git authentication (optional)
-  - SSH key passphrase
-  - or Git password
+- `--password` - Use password authentication
+- `--ssh-key` - Use SSH key authentication
+- `--git-auth` - Include Git authentication setup
 
-### Deploy to a target
+The wizard will guide you through configuring:
+
+- Remote host details
+- Authentication method
+- Project location
+- Git credentials (optional)
+
+### Deploy Project
 
 ```bash
 dpl deploy <alias> [options]
 ```
 
-Options:
-- `--skip-git-auth`: Skip Git authentication during deployment
+**Options:**
 
-Performs the following steps:
-1. Connects to your server via SSH
-2. Sets up Git authentication if configured
-3. Pulls latest changes from git
-4. Stops running containers
-5. Cleans up Docker resources
-6. Starts containers in detached mode
-7. Shows running containers
-8. Cleans up any temporary authentication files
+- `--skip-git-auth` - Bypass Git authentication
 
-### List configurations
+**Deployment Process:**
+
+1. SSH connection establishment
+2. Git authentication setup (if configured)
+3. Code pull from repository
+4. Container management:
+   - Stop running containers
+   - Clean Docker resources
+   - Start new containers
+5. Status verification
+6. Cleanup of temporary files
+
+### Manage Configurations
 
 ```bash
+# List all targets
 dpl list
-```
 
-Shows all configured deployment targets.
-
-### Remove a configuration
-
-```bash
+# Remove a target
 dpl remove <alias>
+
+# Duplicate a configuration
+dpl duplicate <alias> <newAlias> <newFolderPath>
 ```
 
-Removes a configured deployment target.
+## 🔒 Security Features
 
-## Authentication
+- Encrypted storage of sensitive data
+- SSH key path references only (no key storage)
+- Automatic cleanup of authentication artifacts
+- Secure Git credential handling
+- Isolated configuration per user
 
-### SSH Authentication
-You can choose between:
-1. Password authentication
-2. SSH key authentication (defaults to ~/.ssh/id_rsa)
+## 💾 Configuration Storage
 
-### Git Authentication
-You can configure:
-1. SSH key passphrase for existing keys on the server
-2. Git password for HTTPS authentication
-3. No authentication (for public repositories)
+Configurations are securely stored in:
 
-## Development
-
-### Prerequisites
-
-- Node.js >= 14
-- npm >= 6
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/dpl.git
-cd dpl
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-
-# Link for local development
-npm link
-```
-
-### Running Tests
-
-```bash
-# Run tests once
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-```
-
-## Configuration
-
-Configurations are stored securely in:
 - macOS: `~/Library/Preferences/dpl-nodejs`
 - Linux: `~/.config/dpl-nodejs`
 - Windows: `%APPDATA%\dpl-nodejs`
 
-## Security
+## 🛠️ Development Setup
 
-- Passwords and passphrases are stored securely using encryption
-- SSH keys are never stored, only their paths
-- Temporary authentication files are cleaned up after deployment
-- Git credentials are handled securely and cleaned up after use
+### Prerequisites
 
-## Contributing
+- Node.js ≥ 14
+- npm ≥ 6
+
+### Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/dpl.git
+cd dpl
+
+# Setup project
+npm install
+npm run build
+
+# Link for local testing
+npm link
+
+# Run tests
+npm test
+npm run test:watch
+npm run test:coverage
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. Commit your changes
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+4. Push to the branch
+   ```bash
+   git push origin feature/amazing-feature
+   ```
 5. Open a Pull Request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

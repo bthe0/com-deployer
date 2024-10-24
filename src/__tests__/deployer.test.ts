@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 // Mock fs module
 jest.mock('fs', () => ({
-  readFileSync: jest.fn()
+  readFileSync: jest.fn(),
 }));
 
 // Mock NodeSSH module methods
@@ -16,7 +16,7 @@ jest.mock('node-ssh', () => ({
     connect: mockConnect,
     execCommand: mockExecCommand,
     dispose: mockDispose,
-  }))
+  })),
 }));
 
 describe('Deployer', () => {
@@ -27,12 +27,7 @@ describe('Deployer', () => {
     username: 'testuser',
     password: 'testpass',
     projectPath: '/test/path',
-    alias: 'test'
-  };
-
-  const mockGitConfig = {
-    ...mockPasswordConfig,
-    gitKeyPassphrase: 'gitpass'
+    alias: 'test',
   };
 
   beforeEach(() => {
@@ -42,7 +37,7 @@ describe('Deployer', () => {
     // Mock execCommand on the ssh instance (mocked NodeSSH)
     mockExecCommand.mockResolvedValue({ stdout: '/home/testuser', stderr: '', code: 0 });
   });
-  
+
   it('should connect with password authentication', async () => {
     mockConnect.mockResolvedValueOnce(undefined);
 
@@ -62,12 +57,13 @@ describe('Deployer', () => {
     expect(mockConnect).toHaveBeenCalledWith({
       host: mockPasswordConfig.host,
       username: mockPasswordConfig.username,
-      password: mockPasswordConfig.password
+      password: mockPasswordConfig.password,
     });
   });
 
   it('should connect with SSH key authentication', async () => {
-    const mockPrivateKey = '-----BEGIN RSA PRIVATE KEY-----\nkey-content\n-----END RSA PRIVATE KEY-----';
+    const mockPrivateKey =
+      '-----BEGIN RSA PRIVATE KEY-----\nkey-content\n-----END RSA PRIVATE KEY-----';
     (fs.readFileSync as jest.Mock).mockReturnValue(mockPrivateKey);
     mockConnect.mockResolvedValueOnce(undefined);
 
@@ -83,14 +79,14 @@ describe('Deployer', () => {
 
     const result = await deployer.deploy({
       ...mockPasswordConfig,
-      privateKeyPath: '/home/user/.ssh/id_rsa'
+      privateKeyPath: '/home/user/.ssh/id_rsa',
     });
 
     expect(result.success).toBe(true);
     expect(mockConnect).toHaveBeenCalledWith({
       host: mockPasswordConfig.host,
       username: mockPasswordConfig.username,
-      privateKey: mockPrivateKey
+      privateKey: mockPrivateKey,
     });
   });
 
@@ -105,7 +101,7 @@ describe('Deployer', () => {
 
   it('should handle command execution failure', async () => {
     mockConnect.mockResolvedValueOnce(undefined);
-    
+
     // Simulate failure on the git pull command
     mockExecCommand
       .mockResolvedValueOnce({ stdout: '/home/testuser', stderr: '', code: 0 }) // Home dir command

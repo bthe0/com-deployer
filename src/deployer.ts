@@ -10,58 +10,78 @@ export class Deployer {
   }
 
   private async setupSshAgent(passphrase: string, output: string[]): Promise<void> {
-    const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
+    const homeDir = await this.execCommand('echo $HOME', '/').then((result) =>
+      result.stdout.trim()
+    );
 
+    // First, ensure the script is properly escaped and created
     const setupScript = `
-    #!/bin/bash
-    mkdir -p ${homeDir}/.ssh
-    cat > ${homeDir}/.ssh/askpass.sh << 'EOL'
-    #!/bin/bash
-    echo '${passphrase}'
-    EOL
+#!/bin/bash
+mkdir -p ${homeDir}/.ssh
 
-    chmod 700 ${homeDir}/.ssh/askpass.sh
-    chmod 700 ${homeDir}/.ssh
+cat > ${homeDir}/.ssh/askpass.sh << 'EOL'
+#!/bin/bash
+echo '${passphrase}'
+EOL
 
-    pkill ssh-agent || true
+chmod 700 ${homeDir}/.ssh/askpass.sh
+chmod 700 ${homeDir}/.ssh
 
-    export SSH_ASKPASS=${homeDir}/.ssh/askpass.sh
-    export SSH_ASKPASS_REQUIRE=force
-    export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes"
+pkill ssh-agent || true
 
-    eval \`ssh-agent\`
+export SSH_ASKPASS=${homeDir}/.ssh/askpass.sh
+export SSH_ASKPASS_REQUIRE=force
+export GIT_SSH_COMMAND="ssh -o IdentitiesOnly=yes"
 
-    if [ -f "${homeDir}/.ssh/id_ed25519" ]; then
-        SSH_ASKPASS=${homeDir}/.ssh/askpass.sh SSH_ASKPASS_REQUIRE=force setsid -w ssh-add ${homeDir}/.ssh/id_ed25519
-    elif [ -f "${homeDir}/.ssh/id_rsa" ]; then
-        SSH_ASKPASS=${homeDir}/.ssh/askpass.sh SSH_ASKPASS_REQUIRE=force setsid -w ssh-add ${homeDir}/.ssh/id_rsa
-    else
-        echo "No SSH key found in ${homeDir}/.ssh/"
-        exit 1
-    fi
+eval \\\`ssh-agent\\\`
 
-    ssh-add -l
-    ssh -T git@github.com -o StrictHostKeyChecking=no || true
+if [ -f "${homeDir}/.ssh/id_ed25519" ]; then
+    SSH_ASKPASS=${homeDir}/.ssh/askpass.sh SSH_ASKPASS_REQUIRE=force setsid -w ssh-add ${homeDir}/.ssh/id_ed25519
+elif [ -f "${homeDir}/.ssh/id_rsa" ]; then
+    SSH_ASKPASS=${homeDir}/.ssh/askpass.sh SSH_ASKPASS_REQUIRE=force setsid -w ssh-add ${homeDir}/.ssh/id_rsa
+else
+    echo "No SSH key found in ${homeDir}/.ssh/"
+    exit 1
+fi
 
-    echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > ${homeDir}/.ssh-agent-env
-    echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> ${homeDir}/.ssh-agent-env
-    `;
+ssh-add -l
+ssh -T git@github.com -o StrictHostKeyChecking=no || true
 
-    await this.execCommand(`bash -c "echo '${setupScript}' > ${homeDir}/setup-ssh-agent.sh"`, homeDir);
-    await this.execCommand('chmod +x ~/setup-ssh-agent.sh', homeDir);
-    const result = await this.execCommand(`source ${homeDir}/setup-ssh-agent.sh`, homeDir);
+echo "export SSH_AUTH_SOCK=\$SSH_AUTH_SOCK" > ${homeDir}/.ssh-agent-env
+echo "export SSH_AGENT_PID=\$SSH_AGENT_PID" >> ${homeDir}/.ssh-agent-env
+`;
 
-    // Proper error throwing if the command fails
+    // Write the script content with proper escaping
+    const writeScriptResult = await this.execCommand(
+      `cat > ${homeDir}/setup-ssh-agent.sh << 'EOSCRIPT'\n${setupScript}\nEOSCRIPT`,
+      homeDir
+    );
+
+    if (writeScriptResult.code !== 0) {
+      throw new Error(`Failed to create setup script: ${writeScriptResult.stderr}`);
+    }
+
+    // Make the script executable
+    const chmodResult = await this.execCommand(`chmod +x ${homeDir}/setup-ssh-agent.sh`, homeDir);
+    if (chmodResult.code !== 0) {
+      throw new Error(`Failed to make setup script executable: ${chmodResult.stderr}`);
+    }
+
+    // Execute the script
+    const result = await this.execCommand(`bash ${homeDir}/setup-ssh-agent.sh`, homeDir);
+
     if (result.code !== 0) {
-        throw new Error(`Failed to setup SSH agent: ${result.stderr || result.stdout}`);
+      throw new Error(`Failed to setup SSH agent: ${result.stderr || result.stdout}`);
     }
 
     output.push('Set up SSH agent with key');
-}
+  }
 
   private async cleanupGitAuth(output: string[]): Promise<void> {
-    const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
-    
+    const homeDir = await this.execCommand('echo $HOME', '/').then((result) =>
+      result.stdout.trim()
+    );
+
     const cleanupScript = `
 #!/bin/bash
 if [ -f "${homeDir}/.ssh-agent-env" ]; then
@@ -78,16 +98,25 @@ rm -f ${homeDir}/.git-credentials-temp
 git config --global --unset credential.helper || true
 `;
 
-    await this.execCommand(`bash -c "echo '${cleanupScript}' > ${homeDir}/cleanup-ssh-agent.sh"`, homeDir);
+    await this.execCommand(
+      `bash -c "echo '${cleanupScript}' > ${homeDir}/cleanup-ssh-agent.sh"`,
+      homeDir
+    );
     await this.execCommand('chmod +x ~/cleanup-ssh-agent.sh', homeDir);
     await this.execCommand(`source ${homeDir}/cleanup-ssh-agent.sh`, homeDir);
 
     output.push('Cleaned up authentication and temporary files');
   }
 
-  private async setupGitCredentials(password: string, username: string, output: string[]): Promise<void> {
-    const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
-    
+  private async setupGitCredentials(
+    password: string,
+    username: string,
+    output: string[]
+  ): Promise<void> {
+    const homeDir = await this.execCommand('echo $HOME', '/').then((result) =>
+      result.stdout.trim()
+    );
+
     const commands = [
       `git config --global credential.helper 'store --file ${homeDir}/.git-credentials-temp'`,
       `echo "https://${username}:${password}@github.com" > ${homeDir}/.git-credentials-temp`,
@@ -127,42 +156,44 @@ git config --global --unset credential.helper || true
           password: config.password,
         });
       }
-  
+
       output.push('Connected to server');
-  
-      const homeDir = await this.execCommand('echo $HOME', '/').then(result => result.stdout.trim());
-  
+
+      const homeDir = await this.execCommand('echo $HOME', '/').then((result) =>
+        result.stdout.trim()
+      );
+
       if (config.gitKeyPassphrase || config.gitPassword) {
         await this.setupGitAuth(config, output);
       }
-  
+
       const commands = [
         {
           command: `cd ${config.projectPath}`,
-          message: 'Navigating to project directory...'
+          message: 'Navigating to project directory...',
         },
         {
           command: this.buildGitPullCommand(config, homeDir),
-          message: 'Pulling latest changes...'
+          message: 'Pulling latest changes...',
         },
         {
           command: 'docker compose down',
-          message: 'Stopping containers...'
+          message: 'Stopping containers...',
         },
         {
           command: 'docker system prune -f --volumes',
-          message: 'Cleaning up Docker resources...'
+          message: 'Cleaning up Docker resources...',
         },
         {
           command: 'docker compose up -d',
-          message: 'Starting containers...'
+          message: 'Starting containers...',
         },
         {
           command: 'docker ps',
-          message: 'Checking running containers...'
-        }
+          message: 'Checking running containers...',
+        },
       ];
-  
+
       for (const cmd of commands) {
         output.push(cmd.message);
         const result = await this.execCommand(cmd.command, config.projectPath);
@@ -171,23 +202,22 @@ git config --global --unset credential.helper || true
           throw new Error(`Command failed with code ${result.code}: ${result.stderr}`);
         }
       }
-  
+
       if (config.gitKeyPassphrase || config.gitPassword) {
         await this.cleanupGitAuth(output);
       }
-  
-      // Return success only when everything is done without throwing errors.
+
       return { success: true, output };
     } catch (error) {
       return {
         success: false,
         error: error as Error,
-        output
+        output,
       };
     } finally {
       this.ssh.dispose();
     }
-  }  
+  }
 
   private buildGitPullCommand(config: DeploymentConfig, homeDir: string): string {
     if (config.gitKeyPassphrase) {
@@ -213,7 +243,7 @@ git pull origin master
     return {
       stdout: result.stdout,
       stderr: result.stderr,
-      code: result.code ?? 0
+      code: result.code ?? 0,
     };
   }
 }
