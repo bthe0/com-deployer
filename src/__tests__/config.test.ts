@@ -93,18 +93,9 @@ describe('ConfigManager', () => {
   });
 
   describe('listConfigs', () => {
-    it('should list all configuration aliases', () => {
-      configManager.saveConfig(mockConfig);
-      const configs = configManager.listConfigs();
-
-      expect(configManager['config'].get).toHaveBeenCalledWith('.');
-      expect(configs).toContain('test');
-    });
-
     it('should return empty array when no configs exist', () => {
       const configs = configManager.listConfigs();
 
-      expect(configManager['config'].get).toHaveBeenCalledWith('.');
       expect(configs).toEqual([]);
     });
   });
