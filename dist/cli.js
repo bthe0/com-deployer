@@ -168,4 +168,29 @@ program
         console.error(chalk_1.default.red('Failed to remove configuration:', error));
     }
 });
+program
+    .command('duplicate <alias> <newAlias> <newFolderPath>')
+    .description('Duplicate an existing configuration under a new alias with a new project path')
+    .action((alias, newAlias, newFolderPath) => {
+    try {
+        const existingConfig = configManager.getConfig(alias);
+        if (!existingConfig) {
+            console.error(chalk_1.default.red(`No configuration found for alias: ${alias}`));
+            return;
+        }
+        const newConfig = {
+            ...existingConfig,
+            alias: newAlias,
+            projectPath: newFolderPath,
+        };
+        configManager.saveConfig(newConfig);
+        console.log(chalk_1.default.green(`Configuration duplicated successfully!`));
+        console.log(chalk_1.default.blue(`Old Alias: ${alias}`));
+        console.log(chalk_1.default.blue(`New Alias: ${newAlias}`));
+        console.log(chalk_1.default.blue(`New Project Path: ${newFolderPath}`));
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('Failed to duplicate configuration:', error));
+    }
+});
 program.parse(process.argv);
