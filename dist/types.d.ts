@@ -7,20 +7,17 @@ export interface DeploymentConfig {
     alias: string;
     gitPassword?: string;
     gitKeyPassphrase?: string;
-  }
-  
-  export interface CommandResult {
+}
+export interface CommandResult {
     stdout: string;
     stderr: string;
     code: number;
-  }
-  
-  export interface DeploymentResult {
+}
+export interface DeploymentResult {
     success: boolean;
     error?: Error;
     output: string[];
-  }
-  
-  export interface Store {
+}
+export interface Store {
     [key: string]: DeploymentConfig;
-  }
+}

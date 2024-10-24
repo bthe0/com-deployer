@@ -6,7 +6,8 @@ A simple, secure CLI tool for deploying Docker projects over SSH. Configure mult
 
 ## Features
 
-- 🔐 Secure password storage with encryption
+- 🔐 Multiple authentication methods (Password or SSH Key)
+- 🔑 Git authentication support (SSH key passphrase or password)
 - 📦 Multiple deployment targets support
 - 🐳 Docker-compose workflow integration
 - 💻 Interactive configuration
@@ -24,13 +25,21 @@ npm install -g @btheo/dpl
 1. Configure a new deployment target:
 
 ```bash
-dpl configure myserver
+# With password authentication
+dpl configure myserver --password
+
+# With SSH key authentication (defaults to ~/.ssh/id_rsa)
+dpl configure myserver --ssh-key
 ```
 
 2. Deploy to your configured target:
 
 ```bash
+# Standard deployment
 dpl deploy myserver
+
+# Deploy without Git authentication
+dpl deploy myserver --skip-git-auth
 ```
 
 ## Commands
@@ -38,30 +47,41 @@ dpl deploy myserver
 ### Configure a new target
 
 ```bash
-dpl configure [alias]
+dpl configure [alias] [options]
 ```
 
-This will prompt you for:
+Options:
+- `--password`: Use password authentication
+- `--ssh-key`: Use SSH key authentication (defaults to ~/.ssh/id_rsa)
+- `--git-auth`: Configure Git authentication
 
+This will prompt you for:
 - Host address
 - Username
-- Password (stored securely)
+- Authentication method (password or SSH key)
 - Project path on remote server
+- Git authentication (optional)
+  - SSH key passphrase
+  - or Git password
 
 ### Deploy to a target
 
 ```bash
-dpl deploy <alias>
+dpl deploy <alias> [options]
 ```
 
-Performs the following steps:
+Options:
+- `--skip-git-auth`: Skip Git authentication during deployment
 
+Performs the following steps:
 1. Connects to your server via SSH
-2. Pulls latest changes from git
-3. Stops running containers
-4. Cleans up Docker resources
-5. Starts containers in detached mode
-6. Shows running containers
+2. Sets up Git authentication if configured
+3. Pulls latest changes from git
+4. Stops running containers
+5. Cleans up Docker resources
+6. Starts containers in detached mode
+7. Shows running containers
+8. Cleans up any temporary authentication files
 
 ### List configurations
 
@@ -78,6 +98,19 @@ dpl remove <alias>
 ```
 
 Removes a configured deployment target.
+
+## Authentication
+
+### SSH Authentication
+You can choose between:
+1. Password authentication
+2. SSH key authentication (defaults to ~/.ssh/id_rsa)
+
+### Git Authentication
+You can configure:
+1. SSH key passphrase for existing keys on the server
+2. Git password for HTTPS authentication
+3. No authentication (for public repositories)
 
 ## Development
 
@@ -114,15 +147,24 @@ npm test
 
 # Run tests in watch mode
 npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
 ## Configuration
 
 Configurations are stored securely in:
-
 - macOS: `~/Library/Preferences/dpl-nodejs`
 - Linux: `~/.config/dpl-nodejs`
 - Windows: `%APPDATA%\dpl-nodejs`
+
+## Security
+
+- Passwords and passphrases are stored securely using encryption
+- SSH keys are never stored, only their paths
+- Temporary authentication files are cleaned up after deployment
+- Git credentials are handled securely and cleaned up after use
 
 ## Contributing
 
